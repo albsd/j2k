@@ -2,4 +2,5 @@
 .gradle/
 .intellijPlatform/
 .kotlin/
-
+build/
+.idea/
