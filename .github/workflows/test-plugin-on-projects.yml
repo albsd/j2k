@@ -43,7 +43,7 @@ jobs:
           mkdir -p logs
           chmod +x gradlew
           ./gradlew runIde \
-            -PsourceDir="${GITHUB_WORKSPACE}/test-projects/spring-petclinic/src/main/java,${GITHUB_WORKSPACE}/test-projects/spring-petclinic/src/test/java" \
+            -PsourceDir="${GITHUB_WORKSPACE}/test-projects/spring-petclinic/src/test/java" \
             -PoutputDir="${GITHUB_WORKSPACE}/${OUTPUT_DIR}" \
             -PprojectDir="${GITHUB_WORKSPACE}/test-projects/spring-petclinic" \
             --no-daemon \
