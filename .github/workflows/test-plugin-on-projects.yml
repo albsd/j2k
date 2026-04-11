@@ -43,7 +43,7 @@ jobs:
           mkdir -p logs
           chmod +x gradlew
           ./gradlew runIde \
-            -PsourceDir="${GITHUB_WORKSPACE}/test-projects/spring-petclinic/src/main/java" \
+            -PsourceDir="${GITHUB_WORKSPACE}/test-projects/spring-petclinic/src/main/java,${GITHUB_WORKSPACE}/test-projects/spring-petclinic/src/test/java" \
             -PoutputDir="${GITHUB_WORKSPACE}/${OUTPUT_DIR}" \
             -PprojectDir="${GITHUB_WORKSPACE}/test-projects/spring-petclinic" \
             --no-daemon \
@@ -90,4 +90,9 @@ jobs:
         run: |
             count=$(find converted-kotlin -name "*.kt" | wc -l)
             [ "$count" -gt 0 ] || (echo "No files converted" && exit 1)
-            grep -rL "." converted-kotlin/ --include="*.kt" && echo "Empty files found" && exit 1
+            empty_files=$(find converted-kotlin -name "*.kt" -empty)
+            if [ -n "$empty_files" ]; then
+              echo "Empty files found:"
+              echo "$empty_files"
+              exit 1
+            fi
