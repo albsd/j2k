@@ -1,0 +1,21 @@
+<idea-plugin>
+    <id>com.albsd.j2k</id>
+    <name>J2K</name>
+    <version>1.0.0</version>
+    <vendor>albsd</vendor>
+    <description><![CDATA[
+	Java-to-Kotlin converter for CI pipelines.
+	Reads Java source from j2k.sourceDir
+	and writes Kotlin output to j2k.outputDir.
+	]]>
+    </description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>org.jetbrains.kotlin</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <applicationService serviceImplementation="com.albsd.j2k.J2kService" preload="true"/>
+        <postStartupActivity implementation="com.albsd.j2k.J2kActivity"/>
+    </extensions>
+
+</idea-plugin>
