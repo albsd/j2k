@@ -90,4 +90,4 @@ jobs:
         run: |
             count=$(find converted-kotlin -name "*.kt" | wc -l)
             [ "$count" -gt 0 ] || (echo "No files converted" && exit 1)
-            grep -rL "." converted-kotlin/*.kt && echo "Empty files found" && exit 1
+            grep -rL "." converted-kotlin/ --include="*.kt" && echo "Empty files found" && exit 1
