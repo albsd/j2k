@@ -144,8 +144,13 @@ class J2kActivity : ProjectActivity {
                 continue
             }
 
-            val relativePath = javaFile.relativeTo(sourceDir)
-            val outFile = File(outputDir, relativePath.path.removeSuffix(".java") + ".kt")
+            val relativeParts = javaFile.relativeTo(sourceDir).invariantSeparatorsPath.split("/")
+            val strippedParts = if (relativeParts.size >= 2 && relativeParts[1] in setOf("java", "kotlin", "groovy", "scala")) {
+                listOf(relativeParts[0]) + relativeParts.drop(2)
+            } else {
+                relativeParts
+            }
+            val outFile = File(outputDir, strippedParts.joinToString(File.separator).removeSuffix(".java") + ".kt")
             outFile.parentFile.mkdirs()
             outFile.writeText(kotlinSource)
             println("[j2k] OK  ${javaFile.name} -> ${outFile.name}")
