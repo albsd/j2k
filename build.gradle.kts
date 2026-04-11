@@ -44,9 +44,7 @@ intellijPlatform {
 
 tasks.named<RunIdeTask>("runIde") {
     val sourceDirProp = providers.gradleProperty("sourceDir")
-        .orElse(listOf("src/main/java", "src/test/java")
-            .map { rootProject.projectDir.parentFile.resolve(it).absolutePath }
-            .joinToString(","))
+        .orElse(rootProject.projectDir.parentFile.resolve("src").absolutePath)
     val outputDirProp = providers.gradleProperty("outputDir")
         .orElse(rootProject.projectDir.parentFile.resolve("converted-kotlin").absolutePath)
     val projectDirProp = providers.gradleProperty("projectDir")
