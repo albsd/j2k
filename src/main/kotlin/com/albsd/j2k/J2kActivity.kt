@@ -1,16 +1,20 @@
 package com.albsd.j2k
 
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.module.Module
+import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.psi.PsiJavaFile
 import com.intellij.psi.PsiManager
+import com.intellij.psi.codeStyle.CodeStyleManager
 import kotlinx.coroutines.delay
+import org.jetbrains.kotlin.idea.KotlinLanguage
 import org.jetbrains.kotlin.j2k.ConverterSettings
 import org.jetbrains.kotlin.j2k.J2kConverterExtension
+import org.jetbrains.kotlin.psi.KtFile
+import com.intellij.psi.PsiFileFactory
 import java.io.File
 
 class J2kActivity : ProjectActivity {
@@ -22,6 +26,7 @@ class J2kActivity : ProjectActivity {
 
     override suspend fun execute(project: Project) {
         println("[j2k] Starting plugin..")
+
         val sourceDirPaths = System.getProperty(SOURCE_DIR_PROP)
         val outputDirPath = System.getProperty(OUTPUT_DIR_PROP) ?: "converted-kotlin"
 
@@ -105,6 +110,7 @@ class J2kActivity : ProjectActivity {
         )
         println("[j2k] Using converter  : ${converter::class.qualifiedName}")
 
+        val fileFactory = PsiFileFactory.getInstance(project)
         val stats = Stats()
         for (javaFile in javaFiles) {
             val virtualFile = LocalFileSystem.getInstance()
@@ -144,15 +150,36 @@ class J2kActivity : ProjectActivity {
                 continue
             }
 
+            val formattedText = WriteCommandAction.runWriteCommandAction<String>(project) {
+                val ktFile = fileFactory.createFileFromText(
+                    "temp.kt",
+                    KotlinLanguage.INSTANCE,
+                    kotlinSource
+                ) as KtFile
+
+                CodeStyleManager.getInstance(project).reformat(ktFile)
+                ktFile.text
+            }
+
             val relativeParts = javaFile.relativeTo(sourceDir).invariantSeparatorsPath.split("/")
-            val strippedParts = if (relativeParts.size >= 2 && relativeParts[1] in setOf("java", "kotlin", "groovy", "scala")) {
+            val strippedParts = if (
+                relativeParts.size >= 2 &&
+                relativeParts[1] in setOf("java", "kotlin", "groovy", "scala")
+            ) {
                 listOf(relativeParts[0]) + relativeParts.drop(2)
             } else {
                 relativeParts
             }
-            val outFile = File(outputDir, strippedParts.joinToString(File.separator).removeSuffix(".java") + ".kt")
+
+            val outFile = File(
+                outputDir,
+                strippedParts.joinToString(File.separator)
+                    .removeSuffix(".java") + ".kt"
+            )
+
             outFile.parentFile.mkdirs()
-            outFile.writeText(kotlinSource)
+            outFile.writeText(formattedText)
+
             println("[j2k] OK  ${javaFile.name} -> ${outFile.name}")
             stats.converted++
         }
