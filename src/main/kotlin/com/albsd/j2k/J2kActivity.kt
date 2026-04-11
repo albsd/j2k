@@ -22,26 +22,28 @@ class J2kActivity : ProjectActivity {
 
     override suspend fun execute(project: Project) {
         println("[j2k] Starting plugin..")
-        val sourceDirPath = System.getProperty(SOURCE_DIR_PROP)
+        val sourceDirPaths = System.getProperty(SOURCE_DIR_PROP)
         val outputDirPath = System.getProperty(OUTPUT_DIR_PROP) ?: "converted-kotlin"
 
-        if (sourceDirPath == null) {
+        if (sourceDirPaths == null) {
             System.err.println("[j2k] ERROR: -D$SOURCE_DIR_PROP not set — aborting.")
             exit(1)
             return
         }
 
-        val sourceDir = File(sourceDirPath)
+        val sourceDirs = sourceDirPaths.split(",").map { File(it.trim()) }
         val outputDir = File(outputDirPath)
 
-        if (!sourceDir.exists()) {
-            System.err.println("[j2k] ERROR: source dir not found: $sourceDirPath")
-            exit(1)
-            return
+        for (sourceDir in sourceDirs) {
+            if (!sourceDir.exists()) {
+                System.err.println("[j2k] ERROR: source dir not found: ${sourceDir.absolutePath}")
+                exit(1)
+                return
+            }
         }
 
-        println("[j2k] Source: $sourceDirPath")
-        println("[j2k] Output: $outputDirPath")
+        println("[j2k] Sources : $sourceDirPaths")
+        println("[j2k] Output  : $outputDirPath")
 
         val dumbService = DumbService.getInstance(project)
         while (dumbService.isDumb) {
@@ -49,11 +51,18 @@ class J2kActivity : ProjectActivity {
         }
 
         try {
-            val stats = convert(project, sourceDir, outputDir)
+            val totals = Stats()
+            for (sourceDir in sourceDirs) {
+                println("[j2k] --- Processing: ${sourceDir.absolutePath}")
+                val stats = convert(project, sourceDir, outputDir)
+                totals.converted += stats.converted
+                totals.skipped += stats.skipped
+                totals.failed += stats.failed
+            }
             println("[j2k] -------------------------------------")
-            println("[j2k] Converted : ${stats.converted}")
-            println("[j2k] Skipped   : ${stats.skipped}")
-            println("[j2k] Failed    : ${stats.failed}")
+            println("[j2k] Converted : ${totals.converted}")
+            println("[j2k] Skipped   : ${totals.skipped}")
+            println("[j2k] Failed    : ${totals.failed}")
             println("[j2k] -------------------------------------")
             exit(0)
         } catch (e: Exception) {
