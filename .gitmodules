@@ -1,3 +1,6 @@
-[submodule "test-projects/spring-petclinic"]
-	path = test-projects/spring-petclinic
+[submodule "test-projects/petclinic/java/spring-petclinic"]
+	path = test-projects/petclinic/java/spring-petclinic
 	url = https://github.com/spring-projects/spring-petclinic
+[submodule "test-projects/petclinic/kotlin/spring-petclinic-kotlin"]
+	path = test-projects/petclinic/kotlin/spring-petclinic-kotlin
+	url = https://github.com/spring-petclinic/spring-petclinic-kotlin

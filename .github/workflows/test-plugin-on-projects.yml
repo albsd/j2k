@@ -43,9 +43,9 @@ jobs:
           mkdir -p logs
           chmod +x gradlew
           ./gradlew runIde \
-            -PsourceDir="${GITHUB_WORKSPACE}/test-projects/spring-petclinic/src" \
+            -PsourceDir="${GITHUB_WORKSPACE}/test-projects/petclinic/java/spring-petclinic/src" \
             -PoutputDir="${GITHUB_WORKSPACE}/${OUTPUT_DIR}" \
-            -PprojectDir="${GITHUB_WORKSPACE}/test-projects/spring-petclinic" \
+            -PprojectDir="${GITHUB_WORKSPACE}/test-projects/petclinic/java/spring-petclinic" \
             --no-daemon \
             --stacktrace \
             2>&1 | tee logs/j2k-output.log
