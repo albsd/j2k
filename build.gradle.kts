@@ -48,11 +48,14 @@ tasks.named<RunIdeTask>("runIde") {
         .orElse(rootProject.projectDir.parentFile.resolve("converted-kotlin").absolutePath)
     val projectDirProp = providers.gradleProperty("projectDir")
         .orElse(rootProject.projectDir.parentFile.absolutePath)
+    val kotlinOnlyProp = providers.gradleProperty("convertedKtOnly")
+        .orElse("false")
     doFirst {
         println("---------")
         println("projectDirProp = ${projectDirProp.get()}")
         println("sourceDirProp  = ${sourceDirProp.get()}")
         println("outputDirProp  = ${outputDirProp.get()}")
+        println("convertedKtOnly = ${kotlinOnlyProp.get()}")
         println("---------")
     }
 
@@ -61,6 +64,7 @@ tasks.named<RunIdeTask>("runIde") {
             "-Dj2k.sourceDir=${sourceDirProp.get()}",
             "-Dj2k.outputDir=${outputDirProp.get()}",
             "-Dj2k.projectDir=${projectDirProp.get()}",
+            "-Dj2k.convertedKtOnly=${kotlinOnlyProp.get()}",
 //            "-Djava.awt.headless=true",
             "-Didea.is.internal=true",
             "-Didea.auto.reload.plugins=false",

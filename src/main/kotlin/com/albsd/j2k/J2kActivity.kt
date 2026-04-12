@@ -22,6 +22,8 @@ class J2kActivity : ProjectActivity {
     companion object {
         const val SOURCE_DIR_PROP = "j2k.sourceDir"
         const val OUTPUT_DIR_PROP = "j2k.outputDir"
+        const val PROJECT_DIR_PROP = "j2k.projectDir"
+        const val KOTLIN_ONLY_FLAG = "j2k.convertedKtOnly"
     }
 
     override suspend fun execute(project: Project) {
@@ -29,6 +31,8 @@ class J2kActivity : ProjectActivity {
 
         val sourceDirPaths = System.getProperty(SOURCE_DIR_PROP)
         val outputDirPath = System.getProperty(OUTPUT_DIR_PROP) ?: "converted-kotlin"
+        val projectDir = System.getProperty(PROJECT_DIR_PROP)?.let { File(it) }
+        val convertedKtOnly = System.getProperty(KOTLIN_ONLY_FLAG)?.toBoolean() ?: false
 
         if (sourceDirPaths == null) {
             System.err.println("[j2k] ERROR: -D$SOURCE_DIR_PROP not set — aborting.")
@@ -47,8 +51,25 @@ class J2kActivity : ProjectActivity {
             }
         }
 
-        println("[j2k] Sources : $sourceDirPaths")
-        println("[j2k] Output  : $outputDirPath")
+        println("[j2k] Sources     : $sourceDirPaths")
+        println("[j2k] Output      : $outputDirPath")
+        println("[j2k] Project dir : ${projectDir?.absolutePath ?: "(none)"}")
+        println("[j2k] Converted Kotlin only : $convertedKtOnly")
+
+        // copy full project into outputDir/{project} first then read original sourceDir
+        // we write kotlin files on the copy and then delete their respective java versions
+        val destProjectDir: File? = if (!convertedKtOnly && projectDir != null) {
+            val dest = File(outputDir, projectDir.name)
+            println("[j2k] Copying project to ${dest.absolutePath}")
+            projectDir.copyRecursively(dest, overwrite = true)
+            println("[j2k] Copy complete")
+            dest
+        } else {
+            null
+        }
+
+        val outputRoot = destProjectDir ?: projectDir?.let { File(outputDir, it.name) } ?: outputDir
+        val relativeBase = projectDir ?: sourceDirs.first()
 
         val dumbService = DumbService.getInstance(project)
         while (dumbService.isDumb) {
@@ -59,7 +80,7 @@ class J2kActivity : ProjectActivity {
             val totals = Stats()
             for (sourceDir in sourceDirs) {
                 println("[j2k] --- Processing: ${sourceDir.absolutePath}")
-                val stats = convert(project, sourceDir, outputDir)
+                val stats = convert(project, sourceDir, outputRoot, relativeBase, destProjectDir)
                 totals.converted += stats.converted
                 totals.skipped += stats.skipped
                 totals.failed += stats.failed
@@ -83,8 +104,14 @@ class J2kActivity : ProjectActivity {
         var failed: Int = 0
     )
 
-    private fun convert(project: Project, sourceDir: File, outputDir: File): Stats {
-        outputDir.mkdirs()
+    private fun convert(
+        project: Project,
+        sourceDir: File,
+        outputRoot: File,
+        relativeBase: File,
+        copyRoot: File?,
+    ): Stats {
+        outputRoot.mkdirs()
 
         val javaFiles = sourceDir.walkTopDown()
             .filter { it.isFile && it.extension == "java" }
@@ -161,26 +188,18 @@ class J2kActivity : ProjectActivity {
                 ktFile.text
             }
 
-            val relativeParts = javaFile.relativeTo(sourceDir).invariantSeparatorsPath.split("/")
-            val strippedParts = if (
-                relativeParts.size >= 2 &&
-                relativeParts[1] in setOf("java", "kotlin", "groovy", "scala")
-            ) {
-                listOf(relativeParts[0]) + relativeParts.drop(2)
-            } else {
-                relativeParts
-            }
-
-            val outFile = File(
-                outputDir,
-                strippedParts.joinToString(File.separator)
-                    .removeSuffix(".java") + ".kt"
-            )
+            val relativePath = javaFile.relativeTo(relativeBase).invariantSeparatorsPath
+                .removeSuffix(".java") + ".kt"
+            val outFile = File(outputRoot, relativePath)
 
             outFile.parentFile.mkdirs()
             outFile.writeText(formattedText)
 
-            println("[j2k] OK  ${javaFile.name} -> ${outFile.name}")
+            if (copyRoot != null) {
+                File(copyRoot, javaFile.relativeTo(relativeBase).path).delete()
+            }
+
+            println("[j2k] OK  ${javaFile.name} -> ${outFile.relativeTo(outputRoot)}")
             stats.converted++
         }
 
