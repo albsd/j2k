@@ -188,7 +188,8 @@ class J2kActivity : ProjectActivity {
     }
 
     private fun exit(code: Int) {
-        ApplicationManager.getApplication().exit(true, false, true)
+        ProcessHandle.current().descendants().forEach { it.destroyForcibly() }
+        ApplicationManager.getApplication().exit(true, true, false)
         Runtime.getRuntime().halt(code)
     }
 }

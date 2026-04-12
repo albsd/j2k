@@ -1,5 +1,4 @@
 import org.jetbrains.intellij.platform.gradle.tasks.RunIdeTask
-import org.gradle.api.tasks.Input
 
 plugins {
     kotlin("jvm") version "2.1.20"
@@ -71,6 +70,7 @@ tasks.named<RunIdeTask>("runIde") {
             "-Didea.send.usage.stat=false",
             "-Dide.show.tips.on.startup.default.value=false",
             "-Djb.consents.confirmation.enabled=false",
+            "-Dide.browser.jcef.enabled=false",
         )
     })
 
