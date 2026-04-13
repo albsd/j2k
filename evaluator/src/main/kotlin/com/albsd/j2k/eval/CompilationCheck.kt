@@ -26,6 +26,7 @@ object CompilationCheck {
         }
 
         ensureSettingsFile(convertedProjectDir)
+        ensureGradleCompatibility(convertedProjectDir)
         patchBuildGradle(buildGradle)
 
         val isWindows = System.getProperty("os.name").lowercase().contains("windows")
@@ -65,6 +66,26 @@ object CompilationCheck {
             compilerCrash = compilerCrash,
             rawOutput = output,
         )
+    }
+
+    // kotlin 2.1.20 requires gradle 7.6.3+. bump wrapper if older
+    private fun ensureGradleCompatibility(projectDir: File) {
+        val props = File(projectDir, "gradle/wrapper/gradle-wrapper.properties")
+        if (!props.exists()) return
+        val text = props.readText()
+        val match = Regex("""distributionUrl=.*gradle-(\d+)\.(\d+)""").find(text) ?: return
+        val major = match.groupValues[1].toIntOrNull() ?: return
+        val minor = match.groupValues[2].toIntOrNull() ?: return
+        // minimum compatible version with kotlin 2.1.20 is 7.6.3
+        if (major < 7 || (major == 7 && minor < 6)) {
+            println("[eval] Gradle ${major}.${minor} too old for Kotlin 2.1.20 — bumping wrapper to 8.5")
+            props.writeText(
+                text.replace(
+                    Regex("""distributionUrl=.*\n"""),
+                    "distributionUrl=https\\://services.gradle.org/distributions/gradle-8.5-bin.zip\n"
+                )
+            )
+        }
     }
 
     private fun ensureSettingsFile(projectDir: File) {
