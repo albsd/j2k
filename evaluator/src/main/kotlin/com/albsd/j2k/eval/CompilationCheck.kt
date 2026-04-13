@@ -32,10 +32,17 @@ object CompilationCheck {
 
         println("[eval] Patched build.gradle, running build (skipping tests)...")
 
+        val excludes = buildList {
+            if (hasTask(convertedProjectDir, gradlew, "generateJava")) add("generateJava")
+        }.flatMap { listOf("-x", it) }
+
         val process = ProcessBuilder(
-            gradlew.absolutePath,
-            "compileKotlin",
-            "--no-daemon",
+            buildList {
+                add(gradlew.absolutePath)
+                add("compileKotlin")
+                add("--no-daemon")
+                addAll(excludes)
+            }
         )
             .directory(convertedProjectDir)
             .redirectErrorStream(true)
@@ -45,7 +52,7 @@ object CompilationCheck {
         val exitCode = process.waitFor()
 
         val errors = parseErrors(output)
-        val warningCount = output.lines().count { ": warning:" in it }
+        val warningCount = output.lines().count { it.startsWith("w: ") }
 
         return CompilationResult(
             success = exitCode == 0,
@@ -84,14 +91,25 @@ dependencies {
         buildGradle.writeText(patched)
     }
 
-    private val ERROR_PATTERN = Regex("""(?m)^e: file:///(.+\.kt):(\d+):(\d+) (.+)""")
+    // Kotlin 2.x: "e: file:///path.kt:10:5: message"
+    // Kotlin 1.x: "e: /path.kt: (10, 5): message"
+    private fun hasTask(projectDir: File, gradlew: File, taskName: String): Boolean {
+        val output = ProcessBuilder(gradlew.absolutePath, "tasks", "--all", "--no-daemon", "--quiet")
+            .directory(projectDir)
+            .redirectErrorStream(true)
+            .start()
+            .inputStream.bufferedReader().readText()
+        return output.lines().any { it.startsWith(taskName) }
+    }
+
+    private val ERROR_PATTERN = Regex("""(?m)^e: (?:file://)?/?(.+\.kt)(?::(\d+):(\d+):?|: \((\d+), \d+\):) (.+)""")
 
     private fun parseErrors(output: String): List<CompilationError> {
         return ERROR_PATTERN.findAll(output).map {
             CompilationError(
                 file = it.groupValues[1],
-                line = it.groupValues[2].toIntOrNull(),
-                message = it.groupValues[4],
+                line = (it.groupValues[2].ifEmpty { it.groupValues[4] }).toIntOrNull(),
+                message = it.groupValues[5],
             )
         }.toList()
     }
