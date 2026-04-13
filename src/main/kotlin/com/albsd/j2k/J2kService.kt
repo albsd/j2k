@@ -12,30 +12,32 @@ class J2kService {
 
     init {
         System.err.println("[j2k] J2kService init")
-        System.err.println("[j2k] j2k.projectDir=${System.getProperty("j2k.projectDir")}")
+        ApplicationManager.getApplication().invokeLater {
+            System.err.println("[j2k] j2k.projectDir=${System.getProperty("j2k.projectDir")}")
 
-        val projectDir = System.getProperty("j2k.projectDir")
+            val projectDir = System.getProperty("j2k.projectDir")
 
-        if (projectDir == null) {
-            System.err.println("[j2k] j2k.projectDir not set — skipping")
-        } else {
-            val path = Path.of(projectDir)
-
-            if (!path.toFile().exists()) {
-                System.err.println("[j2k] ERROR: project dir not found: $projectDir")
+            if (projectDir == null) {
+                System.err.println("[j2k] j2k.projectDir not set — skipping")
             } else {
-                System.err.println("[j2k] Scheduling project open: $projectDir")
-                GeneralSettings.getInstance().confirmOpenNewProject =
-                    GeneralSettings.OPEN_PROJECT_SAME_WINDOW
+                val path = Path.of(projectDir)
 
-                ApplicationManager.getApplication().executeOnPooledThread {
-                    val project = ProjectManagerEx.getInstanceEx()
-                        .openProject(path, OpenProjectTask { runConfigurators = false })
+                if (!path.toFile().exists()) {
+                    System.err.println("[j2k] ERROR: project dir not found: $projectDir")
+                } else {
+                    System.err.println("[j2k] Scheduling project open: $projectDir")
+                    GeneralSettings.getInstance().confirmOpenNewProject =
+                        GeneralSettings.OPEN_PROJECT_SAME_WINDOW
 
-                    if (project == null) {
-                        System.err.println("[j2k] ERROR: openProject() returned null for $projectDir")
-                    } else {
-                        System.err.println("[j2k] Project opened: ${project.name}")
+                    ApplicationManager.getApplication().executeOnPooledThread {
+                        val project = ProjectManagerEx.getInstanceEx()
+                            .openProject(path, OpenProjectTask { runConfigurators = false })
+
+                        if (project == null) {
+                            System.err.println("[j2k] ERROR: openProject() returned null for $projectDir")
+                        } else {
+                            System.err.println("[j2k] Project opened: ${project.name}")
+                        }
                     }
                 }
             }
