@@ -128,7 +128,7 @@ jobs:
         if: always()
         run: |
           echo "## Evaluation Summary" >> $GITHUB_STEP_SUMMARY
-          for report in evaluation-report-*.json; do
+          for report in evaluations/evaluation-report-*.json; do
             [ -f "$report" ] || continue
             project=$(jq -r '.project' "$report")
             success=$(jq -r '.compilation.success' "$report")
@@ -173,5 +173,5 @@ jobs:
         if: always()
         with:
           name: evaluation-reports
-          path: evaluation-report-*.json
+          path: evaluations/evaluation-report-*.json
           retention-days: 30

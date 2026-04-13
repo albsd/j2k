@@ -67,7 +67,8 @@ fun main(args: Array<String>) {
         println()
     }
 
-    val reportFile = File("evaluation-report-${projectDir.name}.json")
+    val reportsDir = File("evaluations").also { it.mkdirs() }
+    val reportFile = File(reportsDir, "evaluation-report-${projectDir.name}.json")
     reportFile.writeText(buildJson(projectDir.name, h, result, uniqueErrors))
     println("[eval] Report written to ${reportFile.absolutePath}")
 

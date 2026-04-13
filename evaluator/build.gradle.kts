@@ -21,3 +21,7 @@ dependencies {
 application {
     mainClass.set("com.albsd.j2k.eval.MainKt")
 }
+
+tasks.named<JavaExec>("run") {
+    workingDir = rootProject.projectDir
+}

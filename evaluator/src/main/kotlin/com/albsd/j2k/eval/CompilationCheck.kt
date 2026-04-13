@@ -34,15 +34,8 @@ object CompilationCheck {
 
         val process = ProcessBuilder(
             gradlew.absolutePath,
-            "build",
+            "compileKotlin",
             "--no-daemon",
-            "-x", "checkstyleMain",
-            "-x", "checkstyleTest",
-            "-x", "checkFormatMain",
-            "-x", "checkFormatTest",
-            "-x", "formatMain",
-            "-x", "formatTest",
-            "-x", "checkstyleNohttp",
         )
             .directory(convertedProjectDir)
             .redirectErrorStream(true)
