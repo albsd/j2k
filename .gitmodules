@@ -4,3 +4,6 @@
 [submodule "test-projects/petclinic/kotlin/spring-petclinic-kotlin"]
 	path = test-projects/petclinic/kotlin/spring-petclinic-kotlin
 	url = https://github.com/spring-petclinic/spring-petclinic-kotlin
+[submodule "test-projects/realworld/java/spring-boot-realworld-example-app"]
+	path = test-projects/realworld/java/spring-boot-realworld-example-app
+	url = https://github.com/gothinkster/spring-boot-realworld-example-app

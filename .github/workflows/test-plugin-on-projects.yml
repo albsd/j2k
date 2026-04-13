@@ -38,7 +38,7 @@ jobs:
           Xvfb :99 -screen 0 1280x800x24 &
           echo "DISPLAY=:99" >> $GITHUB_ENV
 
-      - name: Run J2K conversion — petclinic
+      - name: Run J2K conversion - petclinic
         run: |
           mkdir -p logs
           chmod +x gradlew
@@ -51,7 +51,18 @@ jobs:
             2>&1 | tee logs/j2k-petclinic.log
         timeout-minutes: 10
 
-      - name: Run J2K conversion — microbenchmark edge cases
+      - name: Run J2K conversion - realworld-example-app
+        run: |
+          ./gradlew runIde \
+            -PsourceDir="${GITHUB_WORKSPACE}/test-projects/realworld/java/spring-boot-realworld-example-app/src" \
+            -PoutputDir="${GITHUB_WORKSPACE}/${OUTPUT_DIR}" \
+            -PprojectDir="${GITHUB_WORKSPACE}/test-projects/realworld/java/spring-boot-realworld-example-app" \
+            --no-daemon \
+            --stacktrace \
+            2>&1 | tee logs/j2k-realworld.log
+        timeout-minutes: 10
+
+      - name: Run J2K conversion - microbenchmark edge cases
         run: |
           ./gradlew runIde \
             -PsourceDir="${GITHUB_WORKSPACE}/test-projects/microbenchmark/src" \
@@ -77,6 +88,7 @@ jobs:
         if: failure()
         run: |
           cat logs/j2k-petclinic.log
+          cat logs/j2k-realworld.log 2>/dev/null || true
           cat logs/j2k-microbenchmark.log 2>/dev/null || true
           echo "=== idea.log ==="
           cat build/idea-sandbox/system/log/idea.log 2>/dev/null || echo "(idea.log 1 not found)"
@@ -88,6 +100,10 @@ jobs:
           echo "=== petclinic ==="
           find "${OUTPUT_DIR}/spring-petclinic" -name "*.kt" 2>/dev/null | sort || echo "(none found)"
           echo "Total: $(find ${OUTPUT_DIR}/spring-petclinic -name '*.kt' 2>/dev/null | wc -l) file(s)"
+          echo ""
+          echo "=== realworld ==="
+          find "${OUTPUT_DIR}/spring-boot-realworld-example-app" -name "*.kt" 2>/dev/null | sort || echo "(none found)"
+          echo "Total: $(find ${OUTPUT_DIR}/spring-boot-realworld-example-app -name '*.kt' 2>/dev/null | wc -l) file(s)"
           echo ""
           echo "=== microbenchmark ==="
           find "${OUTPUT_DIR}/microbenchmark" -name "*.kt" 2>/dev/null | sort || echo "(none found)"
@@ -116,6 +132,12 @@ jobs:
         run: |
           ./gradlew :evaluator:run \
             --args="${GITHUB_WORKSPACE}/${OUTPUT_DIR}/spring-petclinic" \
+            --no-daemon
+
+      - name: Evaluate - realworld
+        run: |
+          ./gradlew :evaluator:run \
+            --args="${GITHUB_WORKSPACE}/${OUTPUT_DIR}/spring-boot-realworld-example-app" \
             --no-daemon
 
       - name: Evaluate - microbenchmark edge cases
