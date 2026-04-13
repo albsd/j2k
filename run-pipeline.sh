@@ -22,7 +22,7 @@ run_conversion() {
 
 run_evaluate() {
   local name="$1" project_dir="$2"
-  step "Evaluate — $name"
+  step "Evaluate - $name"
   ./gradlew :evaluator:run \
     --args="$project_dir" \
     --no-daemon
@@ -33,7 +33,7 @@ cd "$ROOT"
 chmod +x gradlew
 
 [[ -d test-projects/petclinic/java/spring-petclinic/.git ]] || \
-  fail "Submodules not initialised — run: git submodule update --init --recursive"
+  fail "Submodules not initialised - run: git submodule update --init --recursive"
 
 
 run_conversion "petclinic" \
