@@ -193,6 +193,7 @@ class J2kActivity : ProjectActivity {
                     kotlinSource
                 ) as KtFile
 
+
                 CodeStyleManager.getInstance(project).reformat(ktFile)
                 ktFile.text
             }
