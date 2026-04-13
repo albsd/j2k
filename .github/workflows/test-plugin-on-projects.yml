@@ -160,7 +160,7 @@ jobs:
             forced=$(jq -r '.heuristics.forcedNonNull' "$report")
             val_ratio=$(jq -r '.heuristics.valRatioPct' "$report")
             semicolons=$(jq -r '.heuristics.semicolons' "$report")
-            hof=$(jq -r '.heuristics.hofCalls' "$report")
+            hof=$(jq -r '.heuristics.collectionOps' "$report")
 
             if [ "$success" = "true" ]; then
               status="SUCCESS"
@@ -178,7 +178,13 @@ jobs:
             echo "| \`val\` ratio | ${val_ratio}% |" >> $GITHUB_STEP_SUMMARY
             echo "| Forced non-null \`!!\` | $forced |" >> $GITHUB_STEP_SUMMARY
             echo "| Semicolons left | $semicolons |" >> $GITHUB_STEP_SUMMARY
-            echo "| HOF calls | $hof |" >> $GITHUB_STEP_SUMMARY
+            echo "| Collection ops (forEach/map/filter/…) | $hof |" >> $GITHUB_STEP_SUMMARY
+
+            crash=$(jq -r '.compilation.compilerCrash // empty' "$report")
+            if [ -n "$crash" ]; then
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "**Compiler crash:** \`$crash\`" >> $GITHUB_STEP_SUMMARY
+            fi
 
             unique_count=$(jq '.compilation.uniqueErrors | length' "$report")
             if [ "$unique_count" -gt 0 ]; then

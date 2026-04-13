@@ -28,7 +28,7 @@ fun main(args: Array<String>) {
     println("[eval] string concat +  : ${h.totalStringConcat}")
     println("[eval] explicit get/set : ${h.totalExplicitGetSet}")
     println("[eval] semicolons left  : ${h.totalSemicolons}")
-    println("[eval] for loops        : ${h.totalForLoop}  |  HOF (forEach/map/…) : ${h.totalForEach}")
+    println("[eval] for loops        : ${h.totalForLoop}  |  Collection ops (forEach/map/filter/…) : ${h.totalCollectionOps}")
     println("[eval] -----------------------------------------------")
     println()
 
@@ -49,6 +49,9 @@ fun main(args: Array<String>) {
         }
         println()
 
+    } else if (result.compilerCrash != null) {
+        println("[eval] COMPILER CRASH: ${result.compilerCrash}")
+        println()
     } else if (!result.success) {
         println("[eval] Raw compiler output:")
         println(result.rawOutput)
@@ -101,12 +104,13 @@ private fun buildJson(
     "explicitGetSet": ${h.totalExplicitGetSet},
     "semicolons": ${h.totalSemicolons},
     "forLoops": ${h.totalForLoop},
-    "hofCalls": ${h.totalForEach}
+    "collectionOps": ${h.totalCollectionOps}
   },
   "compilation": {
     "success": ${c.success},
     "errorCount": ${c.errorCount},
     "warningCount": ${c.warningCount},
+    "compilerCrash": ${if (c.compilerCrash != null) jsonStr(c.compilerCrash) else "null"},
     "uniqueErrors": [
       $uniqueErrorsJson
     ],

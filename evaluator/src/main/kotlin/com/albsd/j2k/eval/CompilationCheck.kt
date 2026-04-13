@@ -7,6 +7,7 @@ data class CompilationResult(
     val errorCount: Int,
     val warningCount: Int,
     val errors: List<CompilationError>,
+    val compilerCrash: String?,
     val rawOutput: String,
 )
 
@@ -54,12 +55,14 @@ object CompilationCheck {
 
         val errors = parseErrors(output)
         val warningCount = output.lines().count { it.startsWith("w: ") }
+        val compilerCrash = detectCrash(output)
 
         return CompilationResult(
             success = exitCode == 0,
             errorCount = errors.size,
             warningCount = warningCount,
             errors = errors,
+            compilerCrash = compilerCrash,
             rawOutput = output,
         )
     }
@@ -113,6 +116,12 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
             .inputStream.bufferedReader().readText()
         return output.lines().any { it.startsWith(taskName) }
     }
+
+    // Matches "e: some.Exception: message" — compiler internal crash, no file/line
+    private val CRASH_PATTERN = Regex("""(?m)^e: (\w[\w.]+Exception[^\n]*)""")
+
+    private fun detectCrash(output: String): String? =
+        CRASH_PATTERN.find(output)?.groupValues?.get(1)?.trim()
 
     private val ERROR_PATTERN = Regex("""(?m)^e: (?:file://)?/?(.+\.kt)(?::(\d+):(\d+):?|: \((\d+), \d+\):) (.+)""")
 

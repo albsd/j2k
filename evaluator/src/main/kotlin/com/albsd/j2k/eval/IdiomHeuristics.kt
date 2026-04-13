@@ -12,7 +12,7 @@ data class FileHeuristicResult(
     val explicitGetSet: Int,       // .get( / .set( java-style calls
     val semicolons: Int,           // remaining semicolons
     val forLoop: Int,              // for (x in ...) loops
-    val forEach: Int,              // .forEach / .map / .filter etc.
+    val collectionOps: Int,        // .forEach / .map / .filter etc.
 )
 
 data class AggregateHeuristicResult(
@@ -26,7 +26,7 @@ data class AggregateHeuristicResult(
     val totalExplicitGetSet: Int,
     val totalSemicolons: Int,
     val totalForLoop: Int,
-    val totalForEach: Int,
+    val totalCollectionOps: Int,
 )
 
 object IdiomHeuristics {
@@ -67,7 +67,7 @@ object IdiomHeuristics {
             explicitGetSet    = stripped.sumOf { EXPLICIT_GET_SET.findAll(it).count() },
             semicolons        = stripped.sumOf { SEMICOLON.findAll(it).count() },
             forLoop           = stripped.sumOf { FOR_LOOP.findAll(it).count() },
-            forEach           = stripped.sumOf { FOR_EACH_HOF.findAll(it).count() },
+            collectionOps     = stripped.sumOf { FOR_EACH_HOF.findAll(it).count() },
         )
     }
 
@@ -90,7 +90,7 @@ object IdiomHeuristics {
             totalExplicitGetSet = files.sumOf { it.explicitGetSet },
             totalSemicolons     = files.sumOf { it.semicolons },
             totalForLoop        = files.sumOf { it.forLoop },
-            totalForEach        = files.sumOf { it.forEach },
+            totalCollectionOps  = files.sumOf { it.collectionOps },
         )
     }
 }
