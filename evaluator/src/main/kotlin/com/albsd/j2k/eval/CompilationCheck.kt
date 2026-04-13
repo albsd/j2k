@@ -24,6 +24,7 @@ object CompilationCheck {
             "build.gradle not found in ${convertedProjectDir.absolutePath}"
         }
 
+        ensureSettingsFile(convertedProjectDir)
         patchBuildGradle(buildGradle)
 
         val isWindows = System.getProperty("os.name").lowercase().contains("windows")
@@ -63,6 +64,13 @@ object CompilationCheck {
         )
     }
 
+    private fun ensureSettingsFile(projectDir: File) {
+        val exists = listOf("settings.gradle", "settings.gradle.kts").any { File(projectDir, it).exists() }
+        if (!exists) {
+            File(projectDir, "settings.gradle").writeText("rootProject.name = '${projectDir.name}'\n")
+        }
+    }
+
     // inject kotlin jvm plugin
     private fun patchBuildGradle(buildGradle: File) {
         val original = buildGradle.readText()
@@ -85,6 +93,10 @@ sourceSets {
 
 dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-stdlib'
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    kotlinOptions.jvmTarget = java.targetCompatibility.majorVersion
 }
 // ---- end j2k-eval-patch ----
 """
