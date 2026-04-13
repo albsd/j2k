@@ -32,8 +32,8 @@ run_evaluate() {
 cd "$ROOT"
 chmod +x gradlew
 
-[[ -d test-projects/petclinic/java/spring-petclinic/.git ]] || \
-  fail "Submodules not initialised - run: git submodule update --init --recursive"
+# [[ -d test-projects/petclinic/java/spring-petclinic/.git ]] || \
+#   fail "Submodules not initialised - run: git submodule update --init --recursive"
 
 
 run_conversion "petclinic" \

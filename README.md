@@ -47,6 +47,8 @@ chmod +x run-pipeline.sh
 
 This script kind of mirrors the CI pipeline. We run conversion on petclinic, realworld, and microbenchmark, then evaluate each.
 
+> **Note:** This takes between 5-10 minutes. For a first run (with everything having to be built) expect it to take up to 20 minutes. I tested on Windows 11 (on which I made the pipeline/plugin) and on Manjaro Linux (just ran the bash script for the pipeline)
+
 **Run a single conversion**
 ```bash
 ./gradlew runIde \
@@ -176,4 +178,4 @@ is PsiWildcardType -> {
 The fix replaces unrepresentable nested wildcards with star projections (`*`) rather than invalid placeholder tokens. This trades a compiler crash (unrecoverable) for a compile warning about unchecked casts (recoverable and accurate). The resulting code compiles, and the lost type information is documented by the star projection rather than hidden.
 
 
-> [NOTE] : Refer to [this fork of petclinic](https://github.com/albsd/spring-petclinic-kotlin) for commit history on plugin and workflow file. I initially tried to integrate J2K in a petclinic fork and then extend it to other benchmarks too, leading to this repo.
+> **Note:** : Refer to [this fork of petclinic](https://github.com/albsd/spring-petclinic-kotlin) for commit history on plugin and workflow file. I initially tried to integrate J2K in a petclinic fork and then extend it to other benchmarks too, leading to this repo.
