@@ -28,7 +28,7 @@ fun main(args: Array<String>) {
     println("[eval] string concat +  : ${h.totalStringConcat}")
     println("[eval] explicit get/set : ${h.totalExplicitGetSet}")
     println("[eval] semicolons left  : ${h.totalSemicolons}")
-    println("[eval] for loops        : ${h.totalForLoop}  |  Collection ops (forEach/map/filter/…) : ${h.totalCollectionOps}")
+    println("[eval] for loops        : ${h.totalForLoop}  |  Collection ops (forEach/map/filter/...) : ${h.totalCollectionOps}")
     println("[eval] -----------------------------------------------")
     println()
 
@@ -36,10 +36,15 @@ fun main(args: Array<String>) {
 
     val result = CompilationCheck.run(projectDir)
 
+    val displayErrors = result.perFileResults?.sumOf { it.errors.size } ?: result.errorCount
+    val displayWarnings = result.perFileResults?.sumOf { r ->
+        r.rawOutput.lines().count { it.startsWith("w:") }
+    } ?: result.warningCount
+
     println("[eval] -----------------------------------------------")
     println("[eval] Compilation : ${if (result.success) "SUCCESS" else "FAILED"}")
-    println("[eval] Errors      : ${result.errorCount}")
-    println("[eval] Warnings    : ${result.warningCount}")
+    println("[eval] Errors      : $displayErrors${if (result.perFileResults != null) " (per-file)" else ""}")
+    println("[eval] Warnings    : $displayWarnings${if (result.perFileResults != null) " (per-file)" else ""}")
     println("[eval] -----------------------------------------------")
 
     if (result.errors.isNotEmpty()) {
@@ -52,13 +57,40 @@ fun main(args: Array<String>) {
     } else if (result.compilerCrash != null) {
         println("[eval] COMPILER CRASH: ${result.compilerCrash}")
         println()
+        result.perFileResults?.let { perFile ->
+            val passed = perFile.count { it.success }
+            println("[eval] Per-file results ($passed/${perFile.size} passed):")
+            perFile.forEach { r ->
+                val status = when {
+                    r.crash != null -> "CRASH"
+                    r.success -> "OK"
+                    else -> "FAIL"
+                }
+                println("[eval]   ${r.file.padEnd(40)} $status")
+                if (!r.success) {
+                    val compilerLines = r.rawOutput.lines()
+                        .filter { it.startsWith("e:") || it.startsWith("w:") }
+                    if (compilerLines.isNotEmpty()) {
+                        compilerLines.forEach { println("[eval]     $it") }
+                    } else {
+                        // show tail of gradle output for config errors
+                        r.rawOutput.lines()
+                            .filter { it.isNotBlank() }
+                            .takeLast(8)
+                            .forEach { println("[eval]     $it") }
+                    }
+                }
+            }
+            println()
+        }
     } else if (!result.success) {
         println("[eval] Raw compiler output:")
         println(result.rawOutput)
     }
 
     val QUOTED = Regex("""'[^']*'""")
-    val uniqueErrors = result.errors
+    val allErrors = result.perFileResults?.flatMap { it.errors } ?: result.errors
+    val uniqueErrors = allErrors
         .groupingBy { QUOTED.replace(it.message, "''") }
         .eachCount()
         .entries
@@ -72,7 +104,7 @@ fun main(args: Array<String>) {
 
     val reportsDir = File("evaluations").also { it.mkdirs() }
     val reportFile = File(reportsDir, "evaluation-report-${projectDir.name}.json")
-    reportFile.writeText(buildJson(projectDir.name, h, result, uniqueErrors))
+    reportFile.writeText(buildJson(projectDir.name, h, result, uniqueErrors, displayErrors, displayWarnings))
     println("[eval] Report written to ${reportFile.absolutePath}")
 
     System.exit(0)
@@ -83,6 +115,8 @@ private fun buildJson(
     h: AggregateHeuristicResult,
     c: CompilationResult,
     uniqueErrors: List<Map.Entry<String, Int>>,
+    errorCount: Int,
+    warningCount: Int,
 ): String {
     val errorsJson = c.errors.joinToString(",\n      ") { err ->
         """{"file":${jsonStr(err.file)},"line":${err.line ?: "null"},"message":${jsonStr(err.message)}}"""
@@ -108,9 +142,10 @@ private fun buildJson(
   },
   "compilation": {
     "success": ${c.success},
-    "errorCount": ${c.errorCount},
-    "warningCount": ${c.warningCount},
+    "errorCount": $errorCount,
+    "warningCount": $warningCount,
     "compilerCrash": ${if (c.compilerCrash != null) jsonStr(c.compilerCrash) else "null"},
+    "perFileResults": ${if (c.perFileResults != null) perFileJson(c.perFileResults) else "null"},
     "uniqueErrors": [
       $uniqueErrorsJson
     ],
@@ -120,6 +155,13 @@ private fun buildJson(
   }
 }
 """.trimIndent()
+}
+
+private fun perFileJson(results: List<FileCompilationResult>): String {
+    val entries = results.joinToString(",\n    ") { r ->
+        """{"file":${jsonStr(r.file)},"success":${r.success},"crash":${if (r.crash != null) jsonStr(r.crash) else "null"},"errorCount":${r.errors.size}}"""
+    }
+    return "[\n    $entries\n  ]"
 }
 
 private fun jsonStr(s: String): String =

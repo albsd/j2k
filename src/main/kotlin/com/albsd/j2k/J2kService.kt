@@ -18,7 +18,7 @@ class J2kService {
             val projectDir = System.getProperty("j2k.projectDir")
 
             if (projectDir == null) {
-                System.err.println("[j2k] j2k.projectDir not set — skipping")
+                System.err.println("[j2k] j2k.projectDir not set - skipping")
             } else {
                 val path = Path.of(projectDir)
 
