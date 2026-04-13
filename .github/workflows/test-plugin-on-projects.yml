@@ -112,22 +112,66 @@ jobs:
               exit 1
             fi
 
-      - name: Evaluate — petclinic
+      - name: Evaluate - petclinic
         run: |
           ./gradlew :evaluator:run \
             --args="${GITHUB_WORKSPACE}/${OUTPUT_DIR}/spring-petclinic" \
             --no-daemon
 
-      - name: Evaluate — microbenchmark edge cases
+      - name: Evaluate - microbenchmark edge cases
         run: |
           ./gradlew :evaluator:run \
             --args="${GITHUB_WORKSPACE}/${OUTPUT_DIR}/microbenchmark" \
             --no-daemon
 
-      - name: Upload evaluation report
+      - name: Evaluation summary
+        if: always()
+        run: |
+          echo "## Evaluation Summary" >> $GITHUB_STEP_SUMMARY
+          for report in evaluation-report-*.json; do
+            [ -f "$report" ] || continue
+            project=$(jq -r '.project' "$report")
+            success=$(jq -r '.compilation.success' "$report")
+            errors=$(jq -r '.compilation.errorCount' "$report")
+            warnings=$(jq -r '.compilation.warningCount' "$report")
+            files=$(jq -r '.heuristics.filesScanned' "$report")
+            forced=$(jq -r '.heuristics.forcedNonNull' "$report")
+            val_ratio=$(jq -r '.heuristics.valRatioPct' "$report")
+            semicolons=$(jq -r '.heuristics.semicolons' "$report")
+            hof=$(jq -r '.heuristics.hofCalls' "$report")
+
+            if [ "$success" = "true" ]; then
+              status="SUCCESS"
+            else
+              status="FAILED"
+            fi
+
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### $project" >> $GITHUB_STEP_SUMMARY
+            echo "| | |" >> $GITHUB_STEP_SUMMARY
+            echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+            echo "| Compilation | $status |" >> $GITHUB_STEP_SUMMARY
+            echo "| Errors / Warnings | $errors / $warnings |" >> $GITHUB_STEP_SUMMARY
+            echo "| Files scanned | $files |" >> $GITHUB_STEP_SUMMARY
+            echo "| \`val\` ratio | ${val_ratio}% |" >> $GITHUB_STEP_SUMMARY
+            echo "| Forced non-null \`!!\` | $forced |" >> $GITHUB_STEP_SUMMARY
+            echo "| Semicolons left | $semicolons |" >> $GITHUB_STEP_SUMMARY
+            echo "| HOF calls | $hof |" >> $GITHUB_STEP_SUMMARY
+
+            unique_count=$(jq '.compilation.uniqueErrors | length' "$report")
+            if [ "$unique_count" -gt 0 ]; then
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "**Unique error types ($unique_count)**" >> $GITHUB_STEP_SUMMARY
+              echo "| Count | Error |" >> $GITHUB_STEP_SUMMARY
+              echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+              jq -r '.compilation.uniqueErrors[] | "| \(.count) | \(.message) |"' "$report" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+      - name: Upload evaluation reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: evaluation-report
-          path: evaluation-report.json
+          name: evaluation-reports
+          path: evaluation-report-*.json
           retention-days: 30

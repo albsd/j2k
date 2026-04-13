@@ -17,8 +17,7 @@ fun main(args: Array<String>) {
     println("[eval] Converted project : ${projectDir.absolutePath}")
     println()
 
-    // --- Idiom heuristics (no build required) ---
-    println("[eval] Running idiom heuristics...")
+    println("[eval] Running structural heuristics...")
     val heuristics = IdiomHeuristics.run(projectDir)
     val h = heuristics
     println("[eval] -----------------------------------------------")
@@ -33,7 +32,6 @@ fun main(args: Array<String>) {
     println("[eval] -----------------------------------------------")
     println()
 
-    // --- Compilation check ---
     println("[eval] Running compilation check...")
 
     val result = CompilationCheck.run(projectDir)
@@ -51,23 +49,73 @@ fun main(args: Array<String>) {
         }
         println()
 
-        val QUOTED = Regex("""'[^']*'""")
-        val uniqueErrors = result.errors
-            .groupingBy { QUOTED.replace(it.message, "''") }
-            .eachCount()
-            .entries
-            .sortedByDescending { it.value }
-        println("[eval] Unique error types (${uniqueErrors.size}):")
-        uniqueErrors.forEach { (msg, count) ->
-            println("  x$count  $msg")
-        }
-        println()
     } else if (!result.success) {
-        // No structured errors parsed — fall back to raw output so nothing is silently swallowed
         println("[eval] Raw compiler output:")
         println(result.rawOutput)
     }
 
-    // Evaluator always exits 0 — findings are informational, not a pipeline gate
+    val QUOTED = Regex("""'[^']*'""")
+    val uniqueErrors = result.errors
+        .groupingBy { QUOTED.replace(it.message, "''") }
+        .eachCount()
+        .entries
+        .sortedByDescending { it.value }
+
+    if (uniqueErrors.isNotEmpty()) {
+        println("[eval] Unique error types (${uniqueErrors.size}):")
+        uniqueErrors.forEach { (msg, count) -> println("  x$count  $msg") }
+        println()
+    }
+
+    val reportFile = File("evaluation-report-${projectDir.name}.json")
+    reportFile.writeText(buildJson(projectDir.name, h, result, uniqueErrors))
+    println("[eval] Report written to ${reportFile.absolutePath}")
+
     System.exit(0)
 }
+
+private fun buildJson(
+    project: String,
+    h: AggregateHeuristicResult,
+    c: CompilationResult,
+    uniqueErrors: List<Map.Entry<String, Int>>,
+): String {
+    val errorsJson = c.errors.joinToString(",\n      ") { err ->
+        """{"file":${jsonStr(err.file)},"line":${err.line ?: "null"},"message":${jsonStr(err.message)}}"""
+    }
+    val uniqueErrorsJson = uniqueErrors.joinToString(",\n      ") { (msg, count) ->
+        """{"message":${jsonStr(msg)},"count":$count}"""
+    }
+    return """
+{
+  "project": ${jsonStr(project)},
+  "heuristics": {
+    "filesScanned": ${h.files.size},
+    "forcedNonNull": ${h.totalForcedNonNull},
+    "var": ${h.totalVar},
+    "val": ${h.totalVal},
+    "valRatioPct": ${"%.1f".format(h.valRatio * 100)},
+    "nullCheckIf": ${h.totalNullCheckIf},
+    "stringConcat": ${h.totalStringConcat},
+    "explicitGetSet": ${h.totalExplicitGetSet},
+    "semicolons": ${h.totalSemicolons},
+    "forLoops": ${h.totalForLoop},
+    "hofCalls": ${h.totalForEach}
+  },
+  "compilation": {
+    "success": ${c.success},
+    "errorCount": ${c.errorCount},
+    "warningCount": ${c.warningCount},
+    "uniqueErrors": [
+      $uniqueErrorsJson
+    ],
+    "errors": [
+      $errorsJson
+    ]
+  }
+}
+""".trimIndent()
+}
+
+private fun jsonStr(s: String): String =
+    "\"${s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n")}\""
