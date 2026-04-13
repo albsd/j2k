@@ -44,7 +44,7 @@ jobs:
           chmod +x gradlew
           ./gradlew runIde \
             -PsourceDir="${GITHUB_WORKSPACE}/test-projects/petclinic/java/spring-petclinic/src" \
-            -PoutputDir="${GITHUB_WORKSPACE}/${OUTPUT_DIR}/spring-petclinic" \
+            -PoutputDir="${GITHUB_WORKSPACE}/${OUTPUT_DIR}" \
             -PprojectDir="${GITHUB_WORKSPACE}/test-projects/petclinic/java/spring-petclinic" \
             --no-daemon \
             --stacktrace \
@@ -55,7 +55,7 @@ jobs:
         run: |
           ./gradlew runIde \
             -PsourceDir="${GITHUB_WORKSPACE}/test-projects/microbenchmark/src" \
-            -PoutputDir="${GITHUB_WORKSPACE}/${OUTPUT_DIR}/microbenchmark" \
+            -PoutputDir="${GITHUB_WORKSPACE}/${OUTPUT_DIR}" \
             -PprojectDir="${GITHUB_WORKSPACE}/test-projects/microbenchmark" \
             --no-daemon \
             --stacktrace \
