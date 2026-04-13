@@ -174,11 +174,11 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         val major = match.groupValues[1].toIntOrNull() ?: return
         val minor = match.groupValues[2].toIntOrNull() ?: return
         if (major < 7 || (major == 7 && minor < 6)) {
-            println("[eval] Gradle ${major}.${minor} too old for Kotlin 2.1.20 - bumping wrapper to 8.5")
+            println("[eval] Gradle ${major}.${minor} too old for Kotlin 2.1.20 - bumping wrapper to 7.6.3")
             props.writeText(
                 text.replace(
                     Regex("""distributionUrl=.*\n"""),
-                    "distributionUrl=https\\://services.gradle.org/distributions/gradle-8.5-bin.zip\n"
+                    "distributionUrl=https\\://services.gradle.org/distributions/gradle-7.6.3-bin.zip\n"
                 )
             )
         }
