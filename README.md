@@ -69,7 +69,7 @@ This script kind of mirrors the CI pipeline. We run conversion on petclinic, rea
 
 Defined in `.github/workflows/test-plugin-on-projects.yml`. Stages:
 
-> **Note:**  On CI a virtual display is required (`Xvfb :99 -screen 0 1280x800x24 &` / `DISPLAY=:99`). If I did not do this, the setup would break and the workflow would hang.
+> **Note:**  On CI a virtual display is required. If I did not do this, the setup would break and the workflow would hang.
 0. Initialize virtual display
 1. Convert each project with `runIde`
 2. Validate that `.kt` files were produced and none are empty
@@ -79,6 +79,7 @@ Defined in `.github/workflows/test-plugin-on-projects.yml`. Stages:
 
 ---
 
+You can find the results of the evaluation in the summary of the run. For example, see [this run](https://github.com/albsd/j2k/actions/runs/24350328481)
 ## How the Evaluator Works
 
 The evaluator has two parts: compilation checks and structural heuristics.
@@ -95,11 +96,17 @@ Results are written to `evaluations/evaluation-report-<project>.json`.
 
 ## Real-World Evaluation Results
 
-| Project | Files | Compilation | Errors | Warnings | `val` ratio | Forced `!!` | Semicolons | Collection ops |
-|---|---|---|---|---|---|---|---|---|
-| spring-petclinic | 47 | FAILED | 106 | 0 | 82% | 302 | 46 | 9 |
-| spring-boot-realworld-example-app | ~50+ | FAILED | many | — | — | 719 | — | — |
-| microbenchmark | 7 | CRASH + FAILED | 78 | 0 | 92% | 26 | 1 | 13 |
+I evaluate the pipeline using spring-petclinic, spring-boot-realworld-example-app, and a small microbenchmark suite for edge cases. I include the realworld example because it is similar in scope to Petclinic (though slightly larger), but uses a more modern and library-heavy Spring stack, including Lombok. This makes it useful for comparing how the converter behaves on a clean baseline versus a more dependency-heavy codebase.
+
+The val ratio measures the proportion of `val` declarations relative to `var` (higher generally indicates more idiomatic Kotlin output), and collection ops counts functional collection transformations such as `map`, `forEach`, and `filter` used in place of manual loops. The idea is that we would ideally see more collection ops than java-like `for-loops`. 
+
+I also track forced `!!` occurrences as a proxy for unsafe null-handling introduced by the conversion process. A high number indicates that J2K could not infer nullability correctly and fell back to non-idiomatic Kotlin that may compile but is fragile at runtime due to potential NullPointerExceptions.
+
+| Project | Files | Compilation | Errors | Warnings | val ratio | Forced !! | Semicolons | For loops | Collection ops |
+|---|---|---|---|---|---|---|---|---|---|
+| spring-petclinic | 47 | FAILED | 106 | 0 | 82.1% | 302 | 46 | 11 | 9 |
+| spring-boot-realworld-example-app | 116 | FAILED | 1141 | 0 | 93.2% | 719 | 0 | 8 | 44 |
+| microbenchmark | 7 | CRASH + FAILED | 78 | 0 | 92.0% | 26 | 1 | 3 | 13 |
 
 **spring-petclinic** — 106 errors across 47 files. The dominant failure categories are unresolved Java getter/setter references (`getName`, `getId`, `getBirthDate`, etc.) that J2K did not convert to Kotlin property access, `isNew` being emitted as a Boolean property but then called as a function, annotation vararg mismatches (`CascadeType` vs `Array<CascadeType>`), and Spring Data generic bounds (`must be subtype of 'Any'`). The 302 forced `!!` and 46 remaining semicolons indicate the converter fell back to safe but non-idiomatic output for a large portion of the codebase.
 
@@ -168,3 +175,5 @@ is PsiWildcardType -> {
 
 The fix replaces unrepresentable nested wildcards with star projections (`*`) rather than invalid placeholder tokens. This trades a compiler crash (unrecoverable) for a compile warning about unchecked casts (recoverable and accurate). The resulting code compiles, and the lost type information is documented by the star projection rather than hidden.
 
+
+> [NOTE] : Refer to [this fork of petclinic](https://github.com/albsd/spring-petclinic-kotlin) for commit history on plugin and workflow file. I initially tried to integrate J2K in a petclinic fork and then extend it to other benchmarks too, leading to this repo.
