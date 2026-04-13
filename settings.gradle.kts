@@ -7,3 +7,4 @@ pluginManagement {
 }
 
 rootProject.name = "j2k"
+include("evaluator")

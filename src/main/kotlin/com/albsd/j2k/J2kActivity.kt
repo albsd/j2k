@@ -130,10 +130,18 @@ class J2kActivity : ProjectActivity {
         val extension = J2kConverterExtension.EP_NAME.extensionList.first()
         println("[j2k] Using extension : ${extension::class.qualifiedName}")
 
+        val converterSettings = ConverterSettings(
+            forceNotNullTypes = false,
+            specifyLocalVariableTypeByDefault = true,
+            specifyFieldTypeByDefault = true,
+            openByDefault = true,
+            publicByDefault = true
+        )
+
         val converter = extension.createJavaToKotlinConverter(
             project = project,
             targetModule = null,
-            settings = ConverterSettings.defaultSettings
+            settings = converterSettings
         )
         println("[j2k] Using converter  : ${converter::class.qualifiedName}")
 
@@ -160,6 +168,7 @@ class J2kActivity : ProjectActivity {
             }
 
             // plugins/kotlin/j2k/k1.new.post-processing/src/org/jetbrains/kotlin/idea/j2k/post/processing/NewJ2kConverterExtension.kt
+            // im actually using the old plugin because i couldnt manage to get the new one working
             val kotlinSource = try {
                 DumbService.getInstance(project).runReadActionInSmartMode<String?> {
                     converter.elementsToKotlin(listOf(psiFile))
